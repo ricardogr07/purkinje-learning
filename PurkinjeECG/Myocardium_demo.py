@@ -63,6 +63,7 @@ class MyocardialMesh:
                  myo_mesh,
                  electrodes_position,
                  fibers,
+                 device,
                  conductivity_params = None):
         
         reader = vtk.vtkDataSetReader()
@@ -73,6 +74,8 @@ class MyocardialMesh:
 
         mesh_endo     = reader.GetOutput() # myocardium mesh
         self.vtk_mesh = mesh_endo
+
+        self.device = device
 
         # locator to project points onto the mesh
         loc = vtk.vtkCellLocator()
@@ -206,7 +209,7 @@ class MyocardialMesh:
         print('initializing FIM solver')
         start_time = time.time()
         cells = dd.Cells.reshape((-1,5))[:,1:] # tetra, dd.Cells includes the type of element
-        self.fim     = FIMPY.create_fim_solver(self.xyz, cells, self.D, device = 'gpu')
+        self.fim     = FIMPY.create_fim_solver(self.xyz, cells, self.D, device = device)
         print(time.time() - start_time)
 
     def assemble_K(self,pts,elm,Gi):
@@ -312,7 +315,9 @@ class MyocardialMesh:
         print(time.time() - start_time)
 
         # update activation in VTK
-        dd.PointData['activation'][:] = act.get()
+        if self.device == 'gpu':
+            act = act.get()
+        dd.PointData['activation'][:] = act
         
         if return_only_pmjs:
             # Return activation (from FIMPY) on x0 (pmjs, points from the Tree)

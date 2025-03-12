@@ -1,4 +1,4 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.2
 Name: jaxbo
 Version: 0.1.0
 Summary: Bayesian optimization in JAX
@@ -30,6 +30,18 @@ Requires-Dist: pyDOE
 Requires-Dist: numpyro
 Requires-Dist: jax
 Requires-Dist: jaxlib
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: download-url
+Dynamic: home-page
+Dynamic: license
+Dynamic: project-url
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
 
 # Bayesian optimization in JAX
 

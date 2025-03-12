@@ -128,11 +128,15 @@ class FractalTree:
         sister_branches = {}
 
         dx = self.params.l_segment
+         
         init_node = self.mesh_uv.verts[self.params.init_node_id][:2]
         second_node = self.mesh_uv.verts[self.params.second_node_id][:2]
+        s, tri = self.scaling(init_node) 
+        if tri < 0:
+            raise "the initial node is outside the domain"
         init_dir = second_node - init_node
         init_dir /= np.linalg.norm(init_dir)
-        nodes = [init_node, init_node + dx*init_dir]
+        nodes = [init_node, init_node + dx*init_dir*s]
         edges = [Edge(0,1,nodes,None,branch_id)]
 
 

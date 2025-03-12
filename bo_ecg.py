@@ -8,6 +8,7 @@ from jaxbo.utils import normalize, compute_w_gmm
 
 from pyDOE import lhs
 from sklearn.metrics import mean_squared_error
+import traceback
 
 import matplotlib.pyplot as plt
 
@@ -174,10 +175,11 @@ class BO_ecg():
 
             # obtain predicted ecg
             try:
-                predicted, propeiko, LVtree, RVtree = self.bo_purkinje_tree.run_ECG(n_sim = 0, modify = True, side = 'both', **var_params)
+                predicted, LVtree, RVtree = self.bo_purkinje_tree.run_ECG(n_sim = 0, modify = True, side = 'both', **var_params)
                 loss                                = self.calculate_loss(predicted)
-            except:
-                print ("Error in run_ECG")
+            except Exception as e:
+                print(f"Error in run_ECG: {e}")
+                traceback.print_exc()
                 loss = self.y_trees_non_valid
             
             print(f"Loss: {loss}")
@@ -395,14 +397,15 @@ class BO_ecg():
         best_var_parameters = self.set_dictionary_variables(var_parameters = var_parameters,
                                                             x_values       = best_x)
 
-        ecg_bo, endo_bo, LVtree_bo, RVtree_bo = self.bo_purkinje_tree.run_ECG(modify = True, side = 'both', **best_var_parameters)
-        return ecg_bo, endo_bo, LVtree_bo, RVtree_bo
+        ecg_bo,  LVtree_bo, RVtree_bo = self.bo_purkinje_tree.run_ECG(modify = True, side = 'both', **best_var_parameters)
+        return ecg_bo,  LVtree_bo, RVtree_bo
 
 
 
     def set_dictionary_variables(self, var_parameters, x_values):
         dict_parameters = {}
         ind             = 0
+        x_values = [float(x) for x in x_values]
         for var_name, _ in var_parameters.items():
             if var_name == "fascicles_length" or var_name == "fascicles_angles":
                 dict_parameters[var_name] = [[x_values[ind], x_values[ind+1]],
