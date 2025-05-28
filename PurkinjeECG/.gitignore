@@ -1,5 +1,13 @@
-__pycache__
-#output/*
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Archivos de salida (comentados si necesitas conservar README)
+#output/
 !output/README.md
-#data/crt*
+
+# Zips de datasets
 data/*.zip
+
+# Notebooks temporales (por si se guardan ahí)
+.ipynb_checkpoints/

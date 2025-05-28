@@ -1,0 +1,17 @@
+# VSCode config
+.vscode/
+
+# Entorno virtual
+venv/
+
+# Salidas del demo
+output/
+!output/README.md
+
+# Notebooks temporales
+.ipynb_checkpoints/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
