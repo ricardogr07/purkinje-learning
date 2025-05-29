@@ -1,0 +1,29 @@
+name: Codex PR Review
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  review:
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    runs-on: ubuntu-latest
+    if: github.event.label.name == 'codex-review'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: p2achAI/codex-reviewer@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          label: 'codex-review'
+          model: "o4-mini"
+          language: "english"
+          custom_prompt: |
+            This pull request involves a large-scale refactor. 
+            Please focus on identifying any broken logic, inconsistent behavior, or areas where the new structure may introduce regressions. 
+            Also, check for maintainability, readability, and potential performance implications in the new code layout.
