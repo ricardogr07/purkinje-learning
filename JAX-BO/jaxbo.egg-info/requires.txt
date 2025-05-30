@@ -1,8 +1,0 @@
-numpy
-scipy
-scikit-learn
-KDEpy
-pyDOE
-numpyro
-jax
-jaxlib

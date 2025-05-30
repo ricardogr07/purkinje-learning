@@ -1,0 +1,29 @@
+# VSCode config
+.vscode/
+
+# Log files
+*.log
+
+# Virtual environments
+venv/
+.env/
+.env.bak/
+.venv/
+
+# Build artifacts
+build/
+dist/
+
+# Salidas del demo
+output/
+!output/README.md
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+*.pyo

@@ -1,7 +1,7 @@
 numpy
 scipy
 meshio
-./JAX-BO
+jaxbo
 jaxlib
 jax
 fim-python @ git+https://github.com/thomgrand/fim-python
