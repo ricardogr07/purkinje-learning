@@ -33,7 +33,7 @@ try:
     patient_number       = "demo"
     N                    = 250
     obtain_training_data = "compute_points"
-    nIter                = 300
+    nIter                = 100
     criterion_bo         = "EI"
     optimization_points  =   "run_opt"
 
