@@ -21,7 +21,6 @@ class BO_ecg():
         self.bo_purkinje_tree = bo_purkinje_tree
 
 
-
     def extract_overlapping_section(self, ground_truth, predicted, delay):
         # Function to extract the overlapping section of two arrays, given a delay.
         # The delay is consistent with the index given by the onp.correlate() function, 
@@ -55,8 +54,7 @@ class BO_ecg():
         
         return gt, pred
         
-        
-        
+              
     def plot_ecg_match(self, predicted, filename_match = None):
         # Find shift and plot best match
         _, ind_min_loss = self.calculate_loss(predicted, cross_correlation = True, return_ind = True)
@@ -90,8 +88,7 @@ class BO_ecg():
         if filename_match is not None:
             fig.savefig(filename_match + "_ecg_match.pdf")
     
-    
-    
+     
     def calculate_loss(self, predicted, cross_correlation = True, return_ind = False, ecg_pat = None):
         if ecg_pat is None:
             ground_truth = self.ground_truth
@@ -138,7 +135,6 @@ class BO_ecg():
             loss = sum(errors)
 
         return loss
-
 
 
     def mse_jaxbo(self, ground_truth, variable_parameters):
@@ -197,7 +193,6 @@ class BO_ecg():
         return f, p_x_params
 
 
-
     def set_initial_training_data(self, N, noise = 0.):
         self.noise = noise
 
@@ -208,7 +203,6 @@ class BO_ecg():
         y = y + self.noise * y.std(0) * onp.random.normal(y.shape)
 
         return X, y
-
 
 
     def set_test_data(self):
@@ -232,7 +226,6 @@ class BO_ecg():
             X_star = self.lb_params + (self.ub_params - self.lb_params) * lhs(self.dim, nn)
 
         return X_star
-
 
 
     def bo_loop(self, X, y, X_star, true_x, options, save_info = False):
@@ -348,7 +341,6 @@ class BO_ecg():
         return X, y, info_iterations
 
 
-
     def plot_mse(self, X, y, N, file_name):
         idx_best = np.argmin(y)
         best_x   = onp.array(X[idx_best,:])
@@ -375,10 +367,8 @@ class BO_ecg():
         fig.savefig(file_name+"_MSE.pdf")
 
 
-
     def percent_error(self, real, obtained):
         return abs(real - obtained) / real * 100.
-
 
 
     def mse_error(self, real, obtained):
@@ -386,7 +376,6 @@ class BO_ecg():
         for ind in np.arange(len(obtained)):
             err[ind] = 1./len(real) * sum((np.array(real) - obtained[ind,:])**2)
         return err
-
 
 
     def update_purkinje_tree(self, X, y, var_parameters):
@@ -399,7 +388,6 @@ class BO_ecg():
 
         ecg_bo,  LVtree_bo, RVtree_bo = self.bo_purkinje_tree.run_ECG(modify = True, side = 'both', **best_var_parameters)
         return ecg_bo,  LVtree_bo, RVtree_bo
-
 
 
     def set_dictionary_variables(self, var_parameters, x_values):

@@ -4,8 +4,10 @@ meshio
 jaxbo
 jaxlib
 jax
-fim-python @ git+https://github.com/thomgrand/fim-python
+fim-python
 vtk
+myocardial-mesh
+purkinje-uv
 pyvista
 pandas
 seaborn
