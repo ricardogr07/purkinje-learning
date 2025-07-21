@@ -16,7 +16,7 @@ import seaborn as sns
 from scipy.stats import norm
 
 from bo_purkinje_demo import BO_Purkinje
-from PurkinjeECG.Myocardium_demo import MyocardialMesh
+from myocardial_mesh import MyocardialMesh
 from bo_ecg import BO_ecg
 
 from jaxbo.models import GP

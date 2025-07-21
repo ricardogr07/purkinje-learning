@@ -1,11 +1,9 @@
-from PurkinjeECG.PurkinjeUV import PurkinjeTree, FractalTree, Parameters
-#from FractalTree import Fractal_Tree_3D
+from purkinje_uv import PurkinjeTree, FractalTree, Parameters
 import matplotlib.pyplot as plt
 import meshio
 import os
 import numpy as onp
 import jax.numpy as np
-import pickle
 
 class BO_Purkinje():
     # Class to perform Bayesian Optimization on a Purkinje tree.
@@ -27,8 +25,6 @@ class BO_Purkinje():
         self.kmax             = kmax # iterations to converge to ecg
 
         self.LVfractaltree, self.RVfractaltree = self.initialize()
-
-
 
     # set initial parameters for LV and RV fractal trees
     def initialize(self):
@@ -76,8 +72,6 @@ class BO_Purkinje():
         RVfractaltree           = FractalTree(param_RV)
         
         return LVfractaltree, RVfractaltree
-    
-    
     
     def run_ECG(self, LVfractaltree = None, RVfractaltree = None, n_sim = 0, modify = False, side = 'both', **kwargs):
         LVfractaltree = self.LVfractaltree if LVfractaltree is None else LVfractaltree
@@ -245,8 +239,6 @@ class BO_Purkinje():
 
         ecg = self.myocardium.new_get_ecg()
         return ecg, LVtree, RVtree
-    
-    
     
     def save_fractaltrees(self, filename_LVtree, filename_RVtree):
         self.LVfractaltree.save(filename_LVtree)
