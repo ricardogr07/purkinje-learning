@@ -13,7 +13,7 @@ from scipy.stats import norm
 
 from bo_purkinje_tree import BO_PurkinjeTreeConfig, BO_PurkinjeTree
 from myocardial_mesh import MyocardialMesh
-from bo_ecg import BO_ecg
+from bo_ecg import BO_ecg, OptimParam, PriorType
 
 from jaxbo.models import GP
 from jaxbo.utils import normalize
@@ -145,151 +145,134 @@ def generate_initial_data(N, output_dir, var_parameters, bo_method):
     return X, y
 
 
-def var_parameters_dict(var_parameters_names, dim=2):
-    # Parameters to find
-    var_parameters = {}
+def var_parameters_list(var_parameters_names, dim=2, prior=PriorType.UNIFORM):
+    """
+    Builds a list of OptimParam using the same prior for all parameters.
 
-    # init_length
+    Parameters
+    ----------
+    var_parameters_names : list[str]
+        Parameter names to include.
+    dim : int
+        Number of dimensions.
+    prior : PriorType
+        Prior distribution to use for all parameters.
+
+    Returns
+    -------
+    List[OptimParam]
+    """
+    var_parameters = []
+
     if "init_length" in var_parameters_names:
-        lb_init_length = 30.0 * onp.ones(dim)
-        ub_init_length = 100.0 * onp.ones(dim)
-        var_parameters["init_length"] = [lb_init_length, ub_init_length, "uniform"]
+        var_parameters.append(
+            OptimParam("init_length", 30.0 * onp.ones(dim), 100.0 * onp.ones(dim), prior)
+        )
 
-    # length
     if "length" in var_parameters_names:
-        lb_length = 4.0 * onp.ones(1)
-        ub_length = 12.0 * onp.ones(1)
-        var_parameters["length"] = [lb_length, ub_length, "uniform"]
+        var_parameters.append(
+            OptimParam("length", 4.0 * onp.ones(1), 12.0 * onp.ones(1), prior)
+        )
 
-    # w
     if "w" in var_parameters_names:
-        lb_w = 0.05 * onp.ones(1)  # 0.05
-        ub_w = 0.25 * onp.ones(1)  # 0.8
-        var_parameters["w"] = [lb_w, ub_w, "uniform"]
+        var_parameters.append(
+            OptimParam("w", 0.05 * onp.ones(1), 0.25 * onp.ones(1), prior)
+        )
 
-    # l_segment
     if "l_segment" in var_parameters_names:
-        lb_l_segment = 1.0 * onp.ones(dim)
-        ub_l_segment = 15.0 * onp.ones(dim)
-        var_parameters["l_segment"] = [lb_l_segment, ub_l_segment, "uniform"]
+        var_parameters.append(
+            OptimParam("l_segment", 1.0 * onp.ones(dim), 15.0 * onp.ones(dim), prior)
+        )
 
-    # fascicles_length
     if "fascicles_length" in var_parameters_names:
-        lb_fascicles_length = 2.0 * onp.ones(
-            2 * dim
-        )  # 10 # 2.*dim because there are 2 params per ventricle
-        ub_fascicles_length = 50.0 * onp.ones(2 * dim)  # 30
-        var_parameters["fascicles_length"] = [
-            lb_fascicles_length,
-            ub_fascicles_length,
-            "uniform",
-        ]
+        var_parameters.append(
+            OptimParam("fascicles_length", 2.0 * onp.ones(2 * dim), 50.0 * onp.ones(2 * dim), prior)
+        )
 
-    # f_angles
     if "fascicles_angles" in var_parameters_names:
-        lb_fascicles_angles = (
-            -1.0 / 4.0 * onp.pi * np.ones(2 * dim)
-        )  # 0.1 # 2.*dim because there are 2 params per ventricle
-        ub_fascicles_angles = 3.0 / 4.0 * onp.pi * np.ones(2 * dim)  # 1.57
-        var_parameters["fascicles_angles"] = [
-            lb_fascicles_angles,
-            ub_fascicles_angles,
-            "uniform",
-        ]
+        var_parameters.append(
+            OptimParam(
+                "fascicles_angles",
+                (-1.0 / 4.0) * onp.pi * onp.ones(2 * dim),
+                (3.0 / 4.0) * onp.pi * onp.ones(2 * dim),
+                prior,
+            )
+        )
 
-    # branch_angle
     if "branch_angle" in var_parameters_names:
-        lb_branch_angle = 5.0 * onp.pi / 180.0 * np.ones(1)
-        ub_branch_angle = 45.0 * onp.pi / 180.0 * np.ones(1)
-        var_parameters["branch_angle"] = [lb_branch_angle, ub_branch_angle, "uniform"]
+        var_parameters.append(
+            OptimParam(
+                "branch_angle",
+                5.0 * onp.pi / 180.0 * onp.ones(1),
+                45.0 * onp.pi / 180.0 * onp.ones(1),
+                prior,
+            )
+        )
 
-    # root_time
     if "root_time" in var_parameters_names:
-        lb_root_time = -75.0 * np.ones(1)
-        ub_root_time = 50.0 * np.ones(1)
-        var_parameters["root_time"] = [lb_root_time, ub_root_time, "uniform"]
+        var_parameters.append(
+            OptimParam("root_time", -75.0 * onp.ones(1), 50.0 * onp.ones(1), prior)
+        )
 
-    # cv
     if "cv" in var_parameters_names:
-        lb_cv = 2.0 * np.ones(1)
-        ub_cv = 4.0 * np.ones(1)
-        var_parameters["cv"] = [lb_cv, ub_cv, "uniform"]
+        var_parameters.append(
+            OptimParam("cv", 2.0 * onp.ones(1), 4.0 * onp.ones(1), prior)
+        )
 
     return var_parameters
 
 
-def initial_values(var_parameters_names, patient, meshes_list_pat, myocardium):
-    # Initial values for known parameters
-    meshes_list = meshes_list_pat
-    init_length = 30
-    length = 8.0  # [mm]
-    w = 0.1
-    l_segment = 1.0
+def build_bo_config_from_params(
+    var_parameters: list[OptimParam],
+    patient: str,
+    meshes_list: list,
+    myocardium,
+) -> dict:
+    """
+    Creates config for BO_PurkinjeTree using 1.0 as placeholders for parameters
+    to be optimized, and default values otherwise.
 
-    f_len = [20.0, 20.0]
-    f_angles = [1.0, 1.0]
+    Parameters
+    ----------
+    var_parameters : list[OptimParam]
+        Optimization parameters (list of OptimParam instances).
+    patient : str
+        Patient name or ID.
+    meshes_list : list
+        List of meshes for geometry.
+    myocardium : MyocardialMesh
+        Mesh and lead field data.
 
-    branch_angle = 0.15  # 20. * onp.pi/180. #0.15
-    N_it = 20
+    Returns
+    -------
+    dict with keys: patient, meshes_list, config (BO_PurkinjeTreeConfig), myocardium
+    """
 
-    # Assign 1. to the parameters to find
-    # init_length
-    if "init_length" in var_parameters_names:
-        init_length_bo = 1.0
-    else:
-        init_length_bo = init_length
+    to_optimize = [p.parameter for p in var_parameters]
 
-    # length
-    if "length" in var_parameters_names:
-        length_bo = 1.0
-    else:
-        length_bo = length  # [mm]
+    def val(name, default):
+        return 1.0 if name in to_optimize else default
 
-    # w
-    if "w" in var_parameters_names:
-        w_bo = 1.0
-    else:
-        w_bo = w
+    def list2(name, default):
+        return [1.0, 1.0] if name in to_optimize else default
 
-    # l_segment
-    if "l_segment" in var_parameters_names:
-        l_segment_bo = 1.0
-    else:
-        l_segment_bo = l_segment  # [mm]
+    config = BO_PurkinjeTreeConfig(
+        init_length=val("init_length", 30.0),
+        length=val("length", 8.0),
+        w=val("w", 0.1),
+        l_segment=val("l_segment", 1.0),
+        fascicles_length=list2("fascicles_length", [20.0, 20.0]),
+        fascicles_angles=list2("fascicles_angles", [1.0, 1.0]),
+        branch_angle=val("branch_angle", 0.15),
+        N_it=20,
+    )
 
-    # fascicles_length
-    if "fascicles_length" in var_parameters_names:
-        f_len_bo = [1.0, 1.0]
-    else:
-        f_len_bo = f_len
-
-    # f_angles
-    if "fascicles_angles" in var_parameters_names:
-        f_angles_bo = [1.0, 1.0]
-    else:
-        f_angles_bo = f_angles
-
-    # branch_angle
-    if "branch_angle" in var_parameters_names:
-        branch_angle_bo = 1.0
-    else:
-        branch_angle_bo = branch_angle
-
-    parameters_values = {
+    return {
         "patient": patient,
         "meshes_list": meshes_list,
-        "init_length": init_length_bo,
-        "length": length_bo,
-        "w": w_bo,
-        "l_segment": l_segment_bo,
-        "fascicles_length": f_len_bo,
-        "fascicles_angles": f_angles_bo,
-        "branch_angle": branch_angle_bo,
-        "N_it": N_it,
+        "config": config,
         "myocardium": myocardium,
     }
-
-    return parameters_values
 
 
 def optimize_with_BO(
@@ -736,7 +719,7 @@ def main():
     nIter = 100
     mode = "load"  # or "generate"
     criterion_bo = "EI"
-    var_parameters_list = [
+    var_parameters = [
         "init_length",
         "fascicles_length",
         "fascicles_angles",
@@ -748,9 +731,8 @@ def main():
     patient, meshes_list_pat, myo, output_dir = prepare_patient(patient_number)
 
     # Step 2: Set up BO method and parameter space
-    dim = 2
-    var_parameters = var_parameters_dict(var_parameters_list, dim)
-    initial_params = initial_values(var_parameters_list, patient, meshes_list_pat, myo)
+    var_parameters = var_parameters_list(var_parameters, dim=2, prior=PriorType.UNIFORM)
+    initial_params = build_bo_config_from_params(var_parameters, patient, meshes_list_pat, myo)
 
     Tree_bo = BO_PurkinjeTree(**initial_params)
     bo_method = BO_ecg(Tree_bo)

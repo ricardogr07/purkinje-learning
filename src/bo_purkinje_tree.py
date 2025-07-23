@@ -141,7 +141,13 @@ class BO_PurkinjeTree:
 
         return LVfractaltree, RVfractaltree
 
-    def _apply_modifications_to_tree(self, LVtree_obj, RVtree_obj, param_dict, side):
+    def _apply_modifications_to_tree(
+        self,
+        LVtree_obj: FractalTree,
+        RVtree_obj: FractalTree,
+        param_dict: dict[str, Any],
+        side: str,
+    ) -> None:
         """
         Apply parameter modifications to LV/RV fractal trees.
 
@@ -185,7 +191,23 @@ class BO_PurkinjeTree:
                             f"Expected list/tuple of length 2 for '{key}' when side='both'."
                         )
 
-    def _initialize_coupling_points(self, LVtree, RVtree, kwargs, modify):
+    def _initialize_coupling_points(
+        self,
+        LVtree: PurkinjeTree,
+        RVtree: PurkinjeTree,
+        kwargs: dict[str, Any],
+        modify: bool,
+    ) -> tuple[
+        onp.ndarray,  # x0
+        onp.ndarray,  # x0_xyz
+        onp.ndarray,  # x0_vals
+        onp.ndarray,  # SIDE_LV
+        onp.ndarray,  # SIDE_RV
+        int,          # LVroot
+        float,        # LVroot_time
+        int,          # RVroot
+        float         # RVroot_time
+    ]:
         """
         Set up coupling points and parameters like root_time and cv.
 
@@ -262,18 +284,18 @@ class BO_PurkinjeTree:
 
     def _activate_purkinje_and_myo(
         self,
-        LVtree,
-        RVtree,
-        x0,
-        x0_xyz,
-        x0_vals,
-        LVroot,
-        LVroot_time,
-        RVroot,
-        RVroot_time,
-        SIDE_LV,
-        SIDE_RV,
-    ):
+        LVtree: PurkinjeTree,
+        RVtree: PurkinjeTree,
+        x0: onp.ndarray,
+        x0_xyz: onp.ndarray,
+        x0_vals: onp.ndarray,
+        LVroot: int,
+        LVroot_time: float,
+        RVroot: int,
+        RVroot_time: float,
+        SIDE_LV: onp.ndarray,
+        SIDE_RV: onp.ndarray,
+    ) -> onp.ndarray:
         # Activar árboles de Purkinje
         x0_vals[SIDE_LV] = LVtree.activate_fim(
             onp.r_[LVroot, x0[SIDE_LV]], onp.r_[LVroot_time, x0_vals[SIDE_LV]]
@@ -299,13 +321,13 @@ class BO_PurkinjeTree:
 
     def run_ECG(
         self,
-        LVfractaltree=None,
-        RVfractaltree=None,
-        n_sim=0,
-        modify=False,
-        side="both",
-        **kwargs,
-    ):
+        LVfractaltree: FractalTree = None,
+        RVfractaltree: FractalTree = None,
+        n_sim: int = 0,
+        modify: bool = False,
+        side: str = "both",
+        **kwargs: Any,
+    ) -> tuple[onp.ndarray, PurkinjeTree, PurkinjeTree]:
 
         LVfractaltree = self.LVfractaltree if LVfractaltree is None else LVfractaltree
         RVfractaltree = self.RVfractaltree if RVfractaltree is None else RVfractaltree
