@@ -1,11 +1,14 @@
-import pytest
 import numpy as np
+import pytest
+from unittest.mock import MagicMock, patch
+
 from bo_ecg import BO_ecg, OptimParam, PriorType
-from unittest.mock import patch
+
 
 @pytest.fixture
 def dummy_bo():
     return BO_ecg(bo_purkinje_tree=object())
+
 
 def test_set_dictionary_variables_scalar_and_vector(dummy_bo):
 
@@ -14,13 +17,13 @@ def test_set_dictionary_variables_scalar_and_vector(dummy_bo):
             parameter="cv",
             lower=np.array([2.0]),
             upper=np.array([4.0]),
-            prior=PriorType.UNIFORM
+            prior=PriorType.UNIFORM,
         ),
         OptimParam(
             parameter="fascicles_angles",
             lower=np.array([-0.5, -0.5, -0.5, -0.5]),
             upper=np.array([0.5, 0.5, 0.5, 0.5]),
-            prior=PriorType.UNIFORM
+            prior=PriorType.UNIFORM,
         ),
     ]
 
@@ -36,6 +39,7 @@ def test_set_dictionary_variables_scalar_and_vector(dummy_bo):
     assert "fascicles_angles" in result
     assert result["fascicles_angles"] == [[0.1, 0.2], [0.3, 0.4]]
 
+
 def test_extract_overlapping_section_zero_delay():
     bo = BO_ecg(bo_purkinje_tree=None)
 
@@ -43,10 +47,13 @@ def test_extract_overlapping_section_zero_delay():
     predicted = np.array([10, 20, 30, 40, 50])
     delay = 0
 
-    gt_section, pred_section = bo._extract_overlapping_section(ground_truth, predicted, delay)
+    gt_section, pred_section = bo._extract_overlapping_section(
+        ground_truth, predicted, delay
+    )
 
     assert np.array_equal(gt_section, ground_truth)
     assert np.array_equal(pred_section, predicted)
+
 
 def test_extract_overlapping_section_positive_delay():
     bo = BO_ecg(bo_purkinje_tree=None)
@@ -55,10 +62,13 @@ def test_extract_overlapping_section_positive_delay():
     predicted = np.array([10, 20, 30, 40, 50])
     delay = 2  # Predicción retrasada
 
-    gt_section, pred_section = bo._extract_overlapping_section(ground_truth, predicted, delay)
+    gt_section, pred_section = bo._extract_overlapping_section(
+        ground_truth, predicted, delay
+    )
 
     assert np.array_equal(gt_section, ground_truth[2:])
     assert np.array_equal(pred_section, predicted[:3])
+
 
 def test_extract_overlapping_section_negative_delay():
     bo = BO_ecg(bo_purkinje_tree=None)
@@ -67,7 +77,9 @@ def test_extract_overlapping_section_negative_delay():
     predicted = np.array([10, 20, 30, 40, 50])
     delay = -2  # Predicción adelantada
 
-    gt_section, pred_section = bo._extract_overlapping_section(ground_truth, predicted, delay)
+    gt_section, pred_section = bo._extract_overlapping_section(
+        ground_truth, predicted, delay
+    )
 
     assert np.array_equal(gt_section, ground_truth[:3])
     assert np.array_equal(pred_section, predicted[2:])
@@ -122,6 +134,7 @@ def test_loss_direct_missing_lead():
     # Se computa lead "I", y el "II" lanza excepción → se añade inf
     assert loss == pytest.approx(np.inf)
 
+
 def test_extract_overlapping_section_valid_delay():
     bo = BO_ecg(bo_purkinje_tree=None)
 
@@ -136,6 +149,7 @@ def test_extract_overlapping_section_valid_delay():
     np.testing.assert_array_equal(gt_seg, np.array([3, 4, 5]))
     np.testing.assert_array_equal(pred_seg, np.array([10, 20, 30]))
 
+
 def test_calculate_loss_direct():
     bo = BO_ecg(bo_purkinje_tree=None)
 
@@ -146,15 +160,12 @@ def test_calculate_loss_direct():
     loss = bo.calculate_loss(predicted=pred, cross_correlation=False, ecg_pat=gt)
     assert np.isclose(loss, 0.0)
 
-from unittest.mock import MagicMock
 
 def test_mse_jaxbo_creates_objective_function():
     mock_tree = MagicMock()
     bo = BO_ecg(bo_purkinje_tree=mock_tree)
 
-    var_params = [
-        OptimParam("cv", np.array([2.0]), np.array([4.0]), PriorType.UNIFORM)
-    ]
+    var_params = [OptimParam("cv", np.array([2.0]), np.array([4.0]), PriorType.UNIFORM)]
 
     # Simulación falsa de ECG + pérdida
     gt = np.zeros(2, dtype=[("I", float)])
@@ -171,6 +182,7 @@ def test_mse_jaxbo_creates_objective_function():
     assert np.isclose(loss, 42.0)
     mock_tree.run_ECG.assert_called_once()
 
+
 def test_set_initial_training_data_no_noise():
     bo = BO_ecg(bo_purkinje_tree=None)
     bo.f = MagicMock(side_effect=lambda x: np.sum(x**2))  # f(x) = ∑x²
@@ -186,6 +198,7 @@ def test_set_initial_training_data_no_noise():
     assert y.shape == (5,)
     assert (y >= 0).all()
     assert bo.f.call_count == 5
+
 
 def test_set_initial_training_data_with_noise():
     bo = BO_ecg(bo_purkinje_tree=None)
@@ -232,9 +245,7 @@ def test_bo_loop_one_iteration():
     mock_gp = MagicMock()
     mock_gp.train.return_value = {}
     mock_gp.predict.return_value = (np.array([0.1, 0.2]), np.array([0.01, 0.01]))
-    mock_gp.compute_next_point_lbfgs.return_value = (
-        np.array([[0.6, 0.6]]), None, None
-    )
+    mock_gp.compute_next_point_lbfgs.return_value = (np.array([[0.6, 0.6]]), None, None)
     mock_gp.options = options
     bo_loop_gp_patch = patch("bo_ecg.GP", return_value=mock_gp)
 

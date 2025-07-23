@@ -166,7 +166,9 @@ def var_parameters_list(var_parameters_names, dim=2, prior=PriorType.UNIFORM):
 
     if "init_length" in var_parameters_names:
         var_parameters.append(
-            OptimParam("init_length", 30.0 * onp.ones(dim), 100.0 * onp.ones(dim), prior)
+            OptimParam(
+                "init_length", 30.0 * onp.ones(dim), 100.0 * onp.ones(dim), prior
+            )
         )
 
     if "length" in var_parameters_names:
@@ -186,7 +188,12 @@ def var_parameters_list(var_parameters_names, dim=2, prior=PriorType.UNIFORM):
 
     if "fascicles_length" in var_parameters_names:
         var_parameters.append(
-            OptimParam("fascicles_length", 2.0 * onp.ones(2 * dim), 50.0 * onp.ones(2 * dim), prior)
+            OptimParam(
+                "fascicles_length",
+                2.0 * onp.ones(2 * dim),
+                50.0 * onp.ones(2 * dim),
+                prior,
+            )
         )
 
     if "fascicles_angles" in var_parameters_names:
@@ -717,7 +724,7 @@ def main():
     patient_number = "demo"
     N = 250
     nIter = 100
-    mode = "load"  # or "generate"
+    mode = "generate"  # or "load"
     criterion_bo = "EI"
     var_parameters = [
         "init_length",
@@ -732,7 +739,9 @@ def main():
 
     # Step 2: Set up BO method and parameter space
     var_parameters = var_parameters_list(var_parameters, dim=2, prior=PriorType.UNIFORM)
-    initial_params = build_bo_config_from_params(var_parameters, patient, meshes_list_pat, myo)
+    initial_params = build_bo_config_from_params(
+        var_parameters, patient, meshes_list_pat, myo
+    )
 
     Tree_bo = BO_PurkinjeTree(**initial_params)
     bo_method = BO_ecg(Tree_bo)

@@ -22,9 +22,11 @@ from bo_purkinje_tree import BO_PurkinjeTree
 onp.random.seed(1234)
 logger = logging.getLogger(__name__)
 
+
 class PriorType(str, Enum):
     UNIFORM = "uniform"
     GAUSSIAN = "gaussian"
+
 
 @dataclass
 class OptimParam:
@@ -33,16 +35,14 @@ class OptimParam:
     upper: np.ndarray
     prior: PriorType
 
+
 class BO_ecg:
 
     def __init__(self, bo_purkinje_tree: BO_PurkinjeTree):
         self.bo_purkinje_tree = bo_purkinje_tree
 
-
     def plot_ecg_match(
-        self,
-        predicted: np.ndarray,
-        filename_match: str | None = None
+        self, predicted: np.ndarray, filename_match: str | None = None
     ) -> None:
         """
         Plot the best alignment between predicted and ground-truth ECG leads,
@@ -67,8 +67,10 @@ class BO_ecg:
         len_gt = self.ground_truth.shape[0]
         delay = len_gt - 1 + ind_min_loss
 
-        logger.info(f"Best alignment found with delay index: {ind_min_loss} (total shift: {delay})")
-        
+        logger.info(
+            f"Best alignment found with delay index: {ind_min_loss} (total shift: {delay})"
+        )
+
         fig, axs = plt.subplots(
             3, 4, figsize=(10, 13), dpi=120, sharex=True, sharey=True
         )
@@ -107,7 +109,6 @@ class BO_ecg:
             output_file = f"{filename_match}_ecg_match.pdf"
             fig.savefig(output_file)
             logger.info(f"ECG match plot saved to: {output_file}")
-
 
     def _extract_overlapping_section(self, ground_truth, predicted, delay):
         """
@@ -166,7 +167,6 @@ class BO_ecg:
 
         return gt_section, pred_section
 
-
     def _loss_cross_correlation(self, predicted, ground_truth, return_ind):
         """
         Computes the cross-correlation loss between predicted and ground truth ECG signals by shifting the predicted signal
@@ -211,7 +211,9 @@ class BO_ecg:
                     mse = np.mean((gt_seg - pred_seg) ** 2)
                     lead_losses.append(mse)
                 except Exception as e:
-                    logger.warning(f"Failed to compute loss for lead {lead} at shift {shift}: {e}")
+                    logger.warning(
+                        f"Failed to compute loss for lead {lead} at shift {shift}: {e}"
+                    )
                     lead_losses.append(np.inf)
 
             total_loss = np.sum(lead_losses)
@@ -222,12 +224,13 @@ class BO_ecg:
         min_loss = float(loss_array[idx_min])
         best_shift = int(shift_range[idx_min])
 
-        logger.info(f"Best cross-correlated loss: {min_loss:.4e} at shift index {best_shift}")
+        logger.info(
+            f"Best cross-correlated loss: {min_loss:.4e} at shift index {best_shift}"
+        )
 
         if return_ind:
             return min_loss, best_shift
         return min_loss
-
 
     def _loss_direct(self, predicted, ground_truth):
         """
@@ -260,8 +263,9 @@ class BO_ecg:
         logger.info(f"Direct MSE loss: {total_loss:.4e}")
         return float(total_loss)
 
-
-    def calculate_loss(self, predicted, cross_correlation=True, return_ind=False, ecg_pat=None):
+    def calculate_loss(
+        self, predicted, cross_correlation=True, return_ind=False, ecg_pat=None
+    ):
         """
         Compute the ECG loss between predicted and ground truth, with or without temporal alignment.
 
@@ -288,7 +292,6 @@ class BO_ecg:
             return self._loss_cross_correlation(predicted, ground_truth, return_ind)
         else:
             return self._loss_direct(predicted, ground_truth)
-
 
     def _build_bounds_and_prior(self, variable_parameters: List[OptimParam]):
         """
@@ -328,9 +331,10 @@ class BO_ecg:
         else:
             raise NotImplementedError(f"Unsupported prior type: {dist_type}")
 
-        logger.info(f"Bounds set for {len(lb_params)} parameters using {dist_type.value} prior.")
+        logger.info(
+            f"Bounds set for {len(lb_params)} parameters using {dist_type.value} prior."
+        )
         return lb_params, ub_params, p_x_params
-
 
     def mse_jaxbo(
         self,
@@ -359,7 +363,9 @@ class BO_ecg:
         self.ground_truth = ground_truth
         self.variable_parameters = variable_parameters
 
-        lb_params, ub_params, p_x_params = self._build_bounds_and_prior(variable_parameters)
+        lb_params, ub_params, p_x_params = self._build_bounds_and_prior(
+            variable_parameters
+        )
         bounds = {"lb": lb_params, "ub": ub_params}
         dim = len(lb_params)
 
@@ -387,11 +393,8 @@ class BO_ecg:
         self.bounds = {"lb": lb_params, "ub": ub_params}
         return f, p_x_params, bounds
 
-
     def set_initial_training_data(
-        self,
-        N: int,
-        noise: float = 0.0
+        self, N: int, noise: float = 0.0
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate initial training data using Latin Hypercube Sampling.
@@ -410,12 +413,14 @@ class BO_ecg:
         y : np.ndarray
             Corresponding noisy output values (N × 1).
         """
-        
+
         if not hasattr(self, "f") or not callable(self.f):
-            raise RuntimeError("Objective function f(x) is not defined. Call mse_jaxbo() first.")
+            raise RuntimeError(
+                "Objective function f(x) is not defined. Call mse_jaxbo() first."
+            )
         if not hasattr(self, "lb_params") or not hasattr(self, "ub_params"):
             raise RuntimeError("Parameter bounds not defined. Call mse_jaxbo() first.")
-        
+
         self.noise = noise
 
         logger.info(f"Generating {N} initial samples with noise level {self.noise}")
@@ -434,7 +439,6 @@ class BO_ecg:
 
         return X, y
 
-
     def set_test_data(self) -> np.ndarray | tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Generate test input data (X_star) depending on dimensionality for BO visualization or acquisition.
@@ -447,11 +451,17 @@ class BO_ecg:
             Also returns XX, YY meshgrid for surface visualization.
         """
 
-        if not hasattr(self, "dim") or not hasattr(self, "lb_params") or not hasattr(self, "ub_params"):
-            raise RuntimeError("Bounds and dimensionality must be set by mse_jaxbo() before calling set_test_data().")
+        if (
+            not hasattr(self, "dim")
+            or not hasattr(self, "lb_params")
+            or not hasattr(self, "ub_params")
+        ):
+            raise RuntimeError(
+                "Bounds and dimensionality must be set by mse_jaxbo() before calling set_test_data()."
+            )
 
         dim = self.dim
-        
+
         if dim == 1:
             nn = 1000
             logger.info(f"Generating 1D test data with {nn} points")
@@ -474,7 +484,6 @@ class BO_ecg:
             span = self.ub_params - self.lb_params
             X_star = self.lb_params + span * lhs(dim, nn)
             return X_star
-
 
     def plot_mse(
         self,
@@ -501,8 +510,10 @@ class BO_ecg:
         if not hasattr(self, "nIter"):
             raise RuntimeError("Missing self.nIter — ensure bo_loop() has run first.")
         if not hasattr(self, "variable_parameters"):
-            raise RuntimeError("Missing self.variable_parameters — ensure mse_jaxbo() was called.")
-        
+            raise RuntimeError(
+                "Missing self.variable_parameters — ensure mse_jaxbo() was called."
+            )
+
         idx_best = np.argmin(y)
         best_x = onp.array(X[idx_best, :])
 
@@ -552,7 +563,6 @@ class BO_ecg:
         plt.close(fig)
         logger.info(f"MSE plot saved to: {output_path}")
 
-
     def update_purkinje_tree(
         self,
         X: np.ndarray,
@@ -583,7 +593,7 @@ class BO_ecg:
         # Update tree with optimal parameters
         idx_best = onp.argmin(y)
         best_x = X[idx_best]
-        
+
         logger.info(f"Updating Purkinje tree with best_x at index {idx_best}: {best_x}")
 
         param_dict = self.set_dictionary_variables(
@@ -599,11 +609,8 @@ class BO_ecg:
 
         return ecg_bo, LVtree_bo, RVtree_bo
 
-
     def set_dictionary_variables(
-        self,
-        var_parameters: list[OptimParam],
-        x_values: np.ndarray
+        self, var_parameters: list[OptimParam], x_values: np.ndarray
     ) -> dict[str, object]:
         """
         Reconstruct the dictionary of parameters expected by run_ECG from a flat array of values.
@@ -659,13 +666,12 @@ class BO_ecg:
                 ind += param_dim
 
         if ind != len(x_values):
-                logger.warning(
-                    f"Total consumed parameters ({ind}) does not match x_values length ({len(x_values)}). "
-                    f"Check var_parameters definitions."
-                )
+            logger.warning(
+                f"Total consumed parameters ({ind}) does not match x_values length ({len(x_values)}). "
+                f"Check var_parameters definitions."
+            )
 
         return dict_parameters
-
 
     def bo_loop(
         self,
@@ -779,9 +785,7 @@ class BO_ecg:
 
             # Compute next acquisition point
             logger.info("Computing next acquisition point...")
-            new_X, _, _ = gp_model.compute_next_point_lbfgs(
-                num_restarts=50, **kwargs
-            )
+            new_X, _, _ = gp_model.compute_next_point_lbfgs(num_restarts=50, **kwargs)
 
             # Evaluate new points
             logger.info("Evaluating new point(s)...")
@@ -803,11 +807,15 @@ class BO_ecg:
             if true_x is not None:
                 logger.info(f"True x: {true_x}")
 
-        info_iterations = [
-            mean_iterations,
-            std_iterations,
-            w_pred_iterations,
-            a_pred_iterations,
-        ] if save_info else []
+        info_iterations = (
+            [
+                mean_iterations,
+                std_iterations,
+                w_pred_iterations,
+                a_pred_iterations,
+            ]
+            if save_info
+            else []
+        )
 
         return X, y, info_iterations

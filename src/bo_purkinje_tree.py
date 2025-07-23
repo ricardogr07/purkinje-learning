@@ -203,10 +203,10 @@ class BO_PurkinjeTree:
         onp.ndarray,  # x0_vals
         onp.ndarray,  # SIDE_LV
         onp.ndarray,  # SIDE_RV
-        int,          # LVroot
-        float,        # LVroot_time
-        int,          # RVroot
-        float         # RVroot_time
+        int,  # LVroot
+        float,  # LVroot_time
+        int,  # RVroot
+        float,  # RVroot_time
     ]:
         """
         Set up coupling points and parameters like root_time and cv.
