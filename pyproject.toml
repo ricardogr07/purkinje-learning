@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "purkinje-learning"
+version = "0.1.0"
+description = ""
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+  {name = "Ricardo García Ramírez", email = "rgr.5882@gmail.com"}
+]
+keywords = ["jax", "bayesian optimization", "machine learning", "optimization"]
+
+dependencies = [
+    "numpy",
+    "scipy",
+    "meshio",
+    "jaxbo",
+    "jaxlib",
+    "jax",
+    "fim-python",
+    "vtk",
+    "myocardial-mesh",
+    "purkinje-uv",
+    "pyvista",
+    "pandas",
+    "seaborn"
+]
+
+[project.urls]
+homepage = "https://github.com/ricardogr07/JAX-BO"
+repository = "https://github.com/ricardogr07/JAX-BO"
+documentation = "https://github.com/ricardogr07/JAX-BO"
+bug_tracker = "https://github.com/ricardogr07/JAX-BO/issues"
+
+[tool.setuptools]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src"]
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.black]
+target-version = ['py310']
