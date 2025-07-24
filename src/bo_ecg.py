@@ -12,20 +12,17 @@ from pyDOE import lhs
 from dataclasses import dataclass
 from enum import Enum
 from typing import List
+from types import SimpleNamespace
 
 from jaxbo.input_priors import uniform_prior, gaussian_prior
 from jaxbo.models import GP
 from jaxbo.utils import normalize, compute_w_gmm
 
 from bo_purkinje_tree import BO_PurkinjeTree
+from bo_utils.enums import Prior
 
 onp.random.seed(1234)
 logger = logging.getLogger(__name__)
-
-
-class PriorType(str, Enum):
-    UNIFORM = "uniform"
-    GAUSSIAN = "gaussian"
 
 
 @dataclass
@@ -33,13 +30,15 @@ class OptimParam:
     parameter: str
     lower: np.ndarray
     upper: np.ndarray
-    prior: PriorType
+    prior: Prior
 
 
 class BO_ecg:
 
-    def __init__(self, bo_purkinje_tree: BO_PurkinjeTree):
+    def __init__(self, bo_purkinje_tree: BO_PurkinjeTree, N: int = None):
         self.bo_purkinje_tree = bo_purkinje_tree
+        if N is not None:
+            self.config = SimpleNamespace(N=N)
 
     def plot_ecg_match(
         self, predicted: np.ndarray, filename_match: str | None = None
@@ -216,7 +215,8 @@ class BO_ecg:
                     )
                     lead_losses.append(np.inf)
 
-            total_loss = np.sum(lead_losses)
+            lead_losses_array = np.array(lead_losses)
+            total_loss = np.sum(lead_losses_array)
             loss_by_shift.append(total_loss)
 
         loss_array = np.array(loss_by_shift)
@@ -324,16 +324,19 @@ class BO_ecg:
             raise ValueError("All parameters must use the same prior distribution.")
 
         dist_type = prior_types[0]
-        if dist_type == PriorType.UNIFORM:
+        if dist_type == Prior.UNIFORM:
             p_x_params = uniform_prior(lb_params, ub_params)
-        elif dist_type == PriorType.GAUSSIAN:
+        elif dist_type == Prior.GAUSSIAN:
             p_x_params = gaussian_prior(lb_params, ub_params)
         else:
             raise NotImplementedError(f"Unsupported prior type: {dist_type}")
 
+        prior_name = dist_type.value if isinstance(dist_type, Enum) else dist_type
+        param_names = [p.parameter for p in variable_parameters]
         logger.info(
-            f"Bounds set for {len(lb_params)} parameters using {dist_type.value} prior."
+            f"Bounds set for {len(lb_params)} parameters using {prior_name} prior: {param_names}"
         )
+
         return lb_params, ub_params, p_x_params
 
     def mse_jaxbo(
@@ -567,7 +570,7 @@ class BO_ecg:
         self,
         X: np.ndarray,
         y: np.ndarray,
-        variable_parameters: dict[str, OptimParam],
+        variable_parameters: list[OptimParam],
     ) -> tuple[np.ndarray, object, object]:
         """
         Update the Purkinje tree using the best parameters from BO and return the resulting ECG and trees.
@@ -578,8 +581,8 @@ class BO_ecg:
             Candidate input parameter values (N × dim).
         y : np.ndarray
             Corresponding objective function values (MSE).
-        variable_parameters : dict[str, OptimParam]
-            Mapping of parameter names to bounds/prior configuration.
+        variable_parameters : list[OptimParam]
+            List of variable parameters with bounds and prior information.
 
         Returns
         -------
@@ -590,17 +593,19 @@ class BO_ecg:
         RVtree_bo : object
             The updated right ventricular tree.
         """
-        # Update tree with optimal parameters
+        # Get index of best-performing input
         idx_best = onp.argmin(y)
         best_x = X[idx_best]
 
         logger.info(f"Updating Purkinje tree with best_x at index {idx_best}: {best_x}")
 
+        # Convert x vector to dictionary of named parameters
         param_dict = self.set_dictionary_variables(
             var_parameters=variable_parameters,
             x_values=best_x,
         )
 
+        # Run simulation with optimal parameters
         ecg_bo, LVtree_bo, RVtree_bo = self.bo_purkinje_tree.run_ECG(
             modify=True,
             side="both",
@@ -608,6 +613,7 @@ class BO_ecg:
         )
 
         return ecg_bo, LVtree_bo, RVtree_bo
+
 
     def set_dictionary_variables(
         self, var_parameters: list[OptimParam], x_values: np.ndarray

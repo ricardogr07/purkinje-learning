@@ -319,6 +319,39 @@ class BO_PurkinjeTree:
 
         return x0_vals
 
+    def _validate_fractal_tree(
+        self,
+        provided_tree,
+        attr_name: str
+    ) -> "FractalTree":
+        """
+        Validates that the given tree is a FractalTree instance. If None, fallback to self.<attr_name>.
+        Raises ValueError if no valid tree is found.
+
+        Parameters
+        ----------
+        provided_tree : Any
+            The external tree passed to run_ECG.
+        attr_name : str
+            The name of the internal attribute ('LVfractaltree' or 'RVfractaltree').
+
+        Returns
+        -------
+        FractalTree
+        """
+
+        if provided_tree is not None:
+            if not isinstance(provided_tree, FractalTree):
+                raise TypeError(f"{attr_name} must be an instance of FractalTree.")
+            return provided_tree
+
+        internal_tree = getattr(self, attr_name, None)
+        if isinstance(internal_tree, FractalTree):
+            return internal_tree
+
+        raise ValueError(f"{attr_name} is not provided and self.{attr_name} is not set or invalid.")
+
+
     def run_ECG(
         self,
         LVfractaltree: FractalTree = None,
@@ -329,8 +362,9 @@ class BO_PurkinjeTree:
         **kwargs: Any,
     ) -> tuple[onp.ndarray, PurkinjeTree, PurkinjeTree]:
 
-        LVfractaltree = self.LVfractaltree if LVfractaltree is None else LVfractaltree
-        RVfractaltree = self.RVfractaltree if RVfractaltree is None else RVfractaltree
+        LVfractaltree = self._validate_fractal_tree(LVfractaltree, "LVfractaltree")
+        RVfractaltree = self._validate_fractal_tree(RVfractaltree, "RVfractaltree")
+
 
         if modify:
             self._apply_modifications_to_tree(
