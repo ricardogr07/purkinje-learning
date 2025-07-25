@@ -9,10 +9,8 @@ description = ""
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-authors = [
-  {name = "Ricardo García Ramírez", email = "rgr.5882@gmail.com"}
-]
-keywords = ["jax", "bayesian optimization", "machine learning", "optimization"]
+authors = []
+keywords = []
 
 dependencies = [
     "numpy",
@@ -29,12 +27,6 @@ dependencies = [
     "pandas",
     "seaborn"
 ]
-
-[project.urls]
-homepage = "https://github.com/ricardogr07/JAX-BO"
-repository = "https://github.com/ricardogr07/JAX-BO"
-documentation = "https://github.com/ricardogr07/JAX-BO"
-bug_tracker = "https://github.com/ricardogr07/JAX-BO/issues"
 
 [tool.setuptools]
 [tool.setuptools.packages.find]
