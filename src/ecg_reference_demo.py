@@ -17,10 +17,10 @@ from typing import List, Optional, Any, Tuple, Dict
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-from bo_purkinje_tree import BO_PurkinjeTree, BO_PurkinjeTreeConfig
-from bo_ecg import BO_ecg, OptimParam
+from purkinje_learning.bo_purkinje_tree import BO_PurkinjeTree, BO_PurkinjeTreeConfig
+from purkinje_learning.bo_ecg import BO_ecg, OptimParam
 from jaxbo.models import GP
-from bo_utils.enums import CriterionBO, TrainingDataSource, OptimizationMode, DeviceType, BOECGParameter, Prior
+from purkinje_learning import CriterionBO, TrainingDataSource, OptimizationMode, DeviceType, BOECGParameter, Prior
 from myocardial_mesh import MyocardialMesh
 
 # Optional: configure JAX
@@ -65,9 +65,9 @@ def load_demo_geometry(patient_number: str, device: str = "cpu"):
     meshes_list_pat = [388, 412, 198, 186]
 
     myocardial_mesh = MyocardialMesh(
-        myo_mesh=f"{patient_data_path}/crtdemo_mesh_oriented.vtk",
+        mesh_path=f"{patient_data_path}/crtdemo_mesh_oriented.vtk",
         electrodes_position=f"{patient_data_path}/electrode_pos.pkl",
-        fibers=f"{patient_data_path}/crtdemo_f0_oriented.vtk",
+        fibers_path=f"{patient_data_path}/crtdemo_f0_oriented.vtk",
         device=device,
     )
 
@@ -236,7 +236,7 @@ def save_reference_outputs(
     with open(os.path.join(output_dir, "True_ecg"), "wb") as f:
         pickle.dump(ecg, f)
 
-    myocardium.save_pv(os.path.join(output_dir, "True_endo.vtu"))
+    myocardium.save(os.path.join(output_dir, "True_endo.vtu"))
     LVtree.save(os.path.join(output_dir, "True_LVtree.vtu"))
     RVtree.save(os.path.join(output_dir, "True_RVtree.vtu"))
 
@@ -426,7 +426,7 @@ def find_std_ybest_ecgs(
         MSE values comparing best ECG to each patient instance.
     """
 
-    bo_method.logger.info("Finding MSE between best ECG prediction and patient ECG instances...")
+    logger.info("Finding MSE between best ECG prediction and patient ECG instances...")
 
     # Get the input X with minimum loss
     X_min = X[onp.argmin(y)]
@@ -434,8 +434,8 @@ def find_std_ybest_ecgs(
     # Run ECG simulation using best parameters
     ecg_min, _, _ = bo_method.update_purkinje_tree(X_min[None, :], y.min(), var_ecg_parameters)
 
-    bo_method.logger.info(f"Best input parameters: {X_min}")
-    bo_method.logger.info(f"Best MSE value: {y.min()}")
+    logger.info(f"Best input parameters: {X_min}")
+    logger.info(f"Best MSE value: {y.min()}")
 
     # Compute MSE against each ECG instance in the patient dataset
     mse_values_best = []
@@ -497,13 +497,13 @@ def train_gp_model(
     """
 
     if gp_state is None:
-        bo_method.logger.info("Training GP model with valid points...")
+        logger.info("Training GP model with valid points...")
 
         valid = y != bo_method.y_trees_non_valid
         X_valid = X[valid]
         y_valid = y[valid]
 
-        bo_method.logger.info(f"{len(X_valid)} valid training points found.")
+        logger.info(f"{len(X_valid)} valid training points found.")
 
         rng_key = random.PRNGKey(0)
         gp_model = GP(options)
@@ -516,7 +516,7 @@ def train_gp_model(
         opt_params = gp_model.train(norm_batch, rng_key, num_restarts=5)
         t_end = time.time()
 
-        bo_method.logger.info(f"GP training completed in {t_end - t_ini:.2f} seconds")
+        logger.info(f"GP training completed in {t_end - t_ini:.2f} seconds")
 
         kwargs = {
             "params": opt_params,
@@ -527,7 +527,7 @@ def train_gp_model(
 
         gp_state = [gp_model, [norm_batch, norm_const], kwargs]
     else:
-        bo_method.logger.info("Reusing previous GP model (no retraining).")
+        logger.info("Reusing previous GP model (no retraining).")
         gp_model = gp_state[0]
         norm_batch, norm_const = gp_state[1]
         kwargs = gp_state[2]
@@ -545,7 +545,7 @@ def train_gp_model(
     std_batch = std_batch.flatten()
 
     t_end = time.time()
-    bo_method.logger.info(f"GP predictions computed in {t_end - t_ini:.2f} seconds")
+    logger.info(f"GP predictions computed in {t_end - t_ini:.2f} seconds")
 
     # Un-normalize predictions
     ys = mean_batch * norm_const["sigma_y"] + norm_const["mu_y"]
@@ -1104,11 +1104,20 @@ def main(config: PipelineConfig):
         bo_method.plot_ecg_match(predicted = ecg_bo, filename_match = file_name)
 
     # Save tree
-    bo_method.bo_purkinje_tree.myocardium.save_pv(file_name+"_myo.vtu")
+    bo_method.bo_purkinje_tree.myocardium.save(file_name+"_myo.vtu")
     LVtree_bo.save(file_name+"_LVtree.vtu")
     RVtree_bo.save(file_name+"_RVtree.vtu")
 
     plot_pairplot(X, y, var_ecg_parameters, enabled=config.plot)
+
+    skip_rejection_sampling = True
+
+    if skip_rejection_sampling:
+        logger.info("Skipping rejection sampling loop (disabled for this run).")
+        return
+    
+    
+    logger.info("Running rejection sampling to select final samples...")
 
     samples_final, ecg_final, Tree_final, loss_final = run_rejection_sampling_loop(
         X=X,
